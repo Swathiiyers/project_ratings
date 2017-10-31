@@ -9,7 +9,6 @@ from datetime import datetime
 from model import connect_to_db, db
 from server import app
 
-
 def load_users():
     """Load users from u.user into database."""
 
@@ -34,7 +33,6 @@ def load_users():
     # Once we're done, we should commit our work
     db.session.commit()
 
-
 def load_movies():
     """Load movies from u.item into database."""
     print "Movies"
@@ -48,15 +46,13 @@ def load_movies():
         if released_at == '':
             continue
 
-        movie = Movie(movie_id=movie_id, title=title.strip("("),
-            released_at=datetime.strptime(released_at,
-                                "%d-%b-%Y"),
+        movie = Movie(movie_id=movie_id, title=title[:-6],
+            released_at=datetime.strptime(released_at, "%d-%b-%Y"),
             imdb_url=imdb_url)
 
         db.session.add(movie)
 
         db.session.commit()
-
 
 def load_ratings():
     """Load ratings from u.data into database."""
@@ -77,7 +73,6 @@ def load_ratings():
         db.session.commit()
 
 
-
 def set_val_user_id():
     """Set value for the next user_id after seeding database"""
 
@@ -89,7 +84,6 @@ def set_val_user_id():
     query = "SELECT setval('users_user_id_seq', :new_id)"
     db.session.execute(query, {'new_id': max_id + 1})
     db.session.commit()
-
 
 if __name__ == "__main__":
     connect_to_db(app)
