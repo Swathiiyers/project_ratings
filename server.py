@@ -18,6 +18,7 @@ app.secret_key = "ABC"
 # silently. This is horrible. Fix this so that, instead, it raises an
 # error.
 app.jinja_env.undefined = StrictUndefined
+DEBUG_TB_INTERCEPT_REDIRECTS = False
 
 
 @app.route('/')
@@ -46,10 +47,43 @@ def register_process():
     email = request.form.get("frm_email")
     password = request.form.get("frm_password")
 
-    check_email = int(User.query.filter_by(email=email).count())
-    print check_email
+    check_email = User.query.filter_by(email=email).count()
+    # import pdb; pdb.set_trace()
 
-    return check_email
+    if check_email == 0:
+        new_user = User()
+        new_user.email = email
+        new_user.password = password
+        db.session.add(new_user)
+        db.session.commit()
+        return redirect("/")
+
+    else:
+        return redirect('login')
+
+
+@app.route('/login', methods=["GET"])
+def login():
+    """Go to Login page"""
+
+    return render_template("login_page.html")
+
+
+@app.route('/login', methods=["POST"])
+def validate_login():
+    """Validates User login information"""
+
+    email = request.form.get("frm_email")
+    password = request.form.get("frm_password")
+
+    check_user = User.query.filter_by(email=email, password=password).all()
+
+    if check_user == []:
+         return redirect('/login')
+    else:
+        flash("You were successfully logged in")
+        session["user_id"] = check_user[0].user_id
+        return redirect("/")
 
 
 
@@ -65,5 +99,5 @@ if __name__ == "__main__":
     DebugToolbarExtension(app)
 
 
-    
+   
     app.run(port=5000, host='0.0.0.0')
