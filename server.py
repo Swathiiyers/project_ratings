@@ -35,6 +35,16 @@ def user_list():
     users = User.query.all()
     return render_template("user_list.html", users=users)
 
+@app.route("/display_user/<userid>")
+def display_user(userid):
+    """Displays info about the selected user"""
+
+    # get user information from database by user_id (clicked on page)
+    get_user = User.query.filter_by(user_id = userid).first()
+
+    return render_template("user_info.html", get_user=get_user)
+
+
 @app.route("/register", methods=["GET"])
 def user_registration():
     """Send user to registration_form"""
@@ -47,6 +57,8 @@ def register_process():
     email = request.form.get("frm_email")
     password = request.form.get("frm_password")
 
+# At the registration page, check if the email and password entered,
+# already exists in the database (by querying the database)
     check_email = User.query.filter_by(email=email).count()
     # import pdb; pdb.set_trace()
 
@@ -54,12 +66,13 @@ def register_process():
         new_user = User()
         new_user.email = email
         new_user.password = password
+        # Adding new user to the database and commit
         db.session.add(new_user)
         db.session.commit()
         return redirect("/")
 
     else:
-        return redirect('login')
+        return redirect('/login')
 
 
 @app.route('/login', methods=["GET"])
@@ -76,16 +89,27 @@ def validate_login():
     email = request.form.get("frm_email")
     password = request.form.get("frm_password")
 
+# Could use .one() or .first().
+# .one() - would give an error if email and password does not exist
+#.first() - would return 'None' if the email and password does not exist
     check_user = User.query.filter_by(email=email, password=password).all()
+    # user_id = str(check_user[0].user_id)
 
+# If the password is incorrect (checking if check_user is None)
     if check_user == []:
          return redirect('/login')
     else:
+        #If user exists, add user_id to the sesssion.
         flash("You were successfully logged in")
         session["user_id"] = check_user[0].user_id
-        return redirect("/")
+        user_id = session["user_id"]
+        return redirect("/display_user/user_id")
 
+@app.route('/logout')
+def logout_user():
 
+    del session["user_id"]
+    return redirect("/")
 
 if __name__ == "__main__":
     # We have to set debug=True here, since it has to be True at the
@@ -97,7 +121,5 @@ if __name__ == "__main__":
 
     # Use the DebugToolbar
     DebugToolbarExtension(app)
-
-
-   
+ 
     app.run(port=5000, host='0.0.0.0')
