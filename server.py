@@ -18,7 +18,7 @@ app.secret_key = "ABC"
 # silently. This is horrible. Fix this so that, instead, it raises an
 # error.
 app.jinja_env.undefined = StrictUndefined
-DEBUG_TB_INTERCEPT_REDIRECTS = False
+app.config["DEBUG_TB_INTERCEPT_REDIRECTS"] = False
 
 
 @app.route('/')
@@ -28,6 +28,7 @@ def index():
     # return a
     return render_template("homepage.html")
 
+
 @app.route("/users")
 def user_list():
     """Show list of users."""
@@ -35,12 +36,21 @@ def user_list():
     users = User.query.all()
     return render_template("user_list.html", users=users)
 
+
 @app.route("/display_user/<userid>")
 def display_user(userid):
     """Displays info about the selected user"""
 
     # get user information from database by user_id (clicked on page)
-    get_user = User.query.filter_by(user_id = userid).first()
+    get_user = User.query.filter_by(user_id=int(userid)).first()
+    user_id = int(userid)
+    # Get the list of movies and scores for each rating that user rated
+    movie_info = (db.session.query(User, Rating, Movie)
+                 .join(Rating)
+                 .join(Movie)
+                 .filter_by(user_id=user_id).all())
+
+    print movie_info
 
     return render_template("user_info.html", get_user=get_user)
 
@@ -63,15 +73,14 @@ def register_process():
     # import pdb; pdb.set_trace()
 
     if check_email == 0:
-        new_user = User()
-        new_user.email = email
-        new_user.password = password
+        new_user = User(email=email, password=password)
         # Adding new user to the database and commit
         db.session.add(new_user)
         db.session.commit()
         return redirect("/")
 
     else:
+        flash("You have an account. Please login")
         return redirect('/login')
 
 
@@ -97,13 +106,14 @@ def validate_login():
 
 # If the password is incorrect (checking if check_user is None)
     if check_user == []:
-         return redirect('/login')
+        return redirect('/login')
     else:
         #If user exists, add user_id to the sesssion.
         flash("You were successfully logged in")
         session["user_id"] = check_user[0].user_id
         user_id = session["user_id"]
-        return redirect("/display_user/user_id")
+        return redirect("/display_user/"+str(user_id))
+
 
 @app.route('/logout')
 def logout_user():
@@ -121,5 +131,5 @@ if __name__ == "__main__":
 
     # Use the DebugToolbar
     DebugToolbarExtension(app)
- 
+
     app.run(port=5000, host='0.0.0.0')
